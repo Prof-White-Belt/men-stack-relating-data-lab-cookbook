@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head><title>New Recipe</title></head>
+<body>
+  <%- include('../partials/navbar.ejs') %>
+  <h1>Add a New Recipe</h1>
+
+  <form action="/recipes" method="POST">
+    <label>Recipe Name:</label><br />
+    <input type="text" name="name" required /><br /><br />
+
+    <label>Instructions:</label><br />
+    <textarea name="instructions"></textarea><br /><br />
+
+    <label>Ingredients:</label><br />
+    <% ingredients.forEach(ingredient => { %>
+      <input type="checkbox" name="ingredients" value="<%= ingredient._id %>" />
+      <%= ingredient.name %><br />
+    <% }) %>
+
+    <br />
+    <button type="submit">Create Recipe</button>
+  </form>
+</body>
+</html>

@@ -1,80 +1,65 @@
-const express = require('express');
+import express from 'express';
+import bcrypt from 'bcrypt';
+import User from '../models/user.js'; // make sure user.js uses ES module export too
+
 const router = express.Router();
-const bcrypt = require('bcrypt');
 
-const User = require('../models/user.js');
-
-router.get('/sign-up', (req, res) => {
+// === Register ===
+router.get('/signup', (req, res) => {
   res.render('auth/sign-up.ejs');
 });
 
-router.get('/sign-in', (req, res) => {
-  res.render('auth/sign-in.ejs');
-});
-
-router.get('/sign-out', (req, res) => {
-  req.session.destroy();
-  res.redirect('/');
-});
-
-router.post('/sign-up', async (req, res) => {
+router.post('/signup', async (req, res) => {
   try {
-    // Check if the username is already taken
-    const userInDatabase = await User.findOne({ username: req.body.username });
-    if (userInDatabase) {
-      return res.send('Username already taken.');
-    }
-  
-    // Username is not taken already!
-    // Check if the password and confirm password match
-    if (req.body.password !== req.body.confirmPassword) {
-      return res.send('Password and Confirm Password must match');
-    }
-  
-    // Must hash the password before sending to the database
-    const hashedPassword = bcrypt.hashSync(req.body.password, 10);
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
     req.body.password = hashedPassword;
-  
-    // All ready to create the new user!
-    await User.create(req.body);
-  
-    res.redirect('/auth/sign-in');
-  } catch (error) {
-    console.log(error);
+    const user = await User.create(req.body);
+    req.session.user = {
+      username: user.username,
+      _id: user._id,
+    };
     res.redirect('/');
+  } catch (err) {
+    console.error(err);
+    res.redirect('/auth/sign-up');
   }
 });
 
-router.post('/sign-in', async (req, res) => {
+// === Login ===
+router.get('/login', (req, res) => {
+  res.render('auth/login.ejs');
+});
+
+router.post('/login', async (req, res) => {
   try {
-    // First, get the user from the database
-    const userInDatabase = await User.findOne({ username: req.body.username });
-    if (!userInDatabase) {
-      return res.send('Login failed. Please try again.');
+    const foundUser = await User.findOne({ username: req.body.username });
+    if (!foundUser) {
+      return res.send('User not found');
     }
-  
-    // There is a user! Time to test their password with bcrypt
-    const validPassword = bcrypt.compareSync(
-      req.body.password,
-      userInDatabase.password
-    );
-    if (!validPassword) {
-      return res.send('Login failed. Please try again.');
+
+    const match = await bcrypt.compare(req.body.password, foundUser.password);
+    if (!match) {
+      return res.send('Incorrect password');
     }
-  
-    // There is a user AND they had the correct password. Time to make a session!
-    // Avoid storing the password, even in hashed format, in the session
-    // If there is other data you want to save to `req.session.user`, do so here!
+
     req.session.user = {
-      username: userInDatabase.username,
-      _id: userInDatabase._id
+      username: foundUser.username,
+      _id: foundUser._id,
     };
-  
+
     res.redirect('/');
-  } catch (error) {
-    console.log(error);
-    res.redirect('/');
+  } catch (err) {
+    console.error(err);
+    res.redirect('/auth/login');
   }
+});
+
+// === Logout ===
+router.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/');
+  });
 });
 
 export default router;
+

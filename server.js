@@ -7,16 +7,20 @@ import morgan from 'morgan';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import MongoStore from 'connect-mongo';
+
 import authController from './controllers/auth.js';
+import recipesController from './controllers/recipes.js';
+
+import passUserToView from './middleware/pass-user-to-view.js';
+import isSignedIn from './middleware/is-signed-in.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load env vars
+// Load environment variables
 dotenv.config();
 
-const app = express(); // ← initialize express
-
+const app = express();
 const port = process.env.PORT || 3000;
 
 // MongoDB connection
@@ -39,22 +43,26 @@ app.use(
   })
 );
 
-// Routes
-app.get('/', (req, res) => {
-  res.render('index.ejs', { user: req.session.user });
-});
+// Make user accessible in all views
+app.use(passUserToView);
 
-app.get('/vip-lounge', (req, res) => {
+// 🔓 Public Routes
+app.get('/', (req, res) => {
   if (req.session.user) {
-    res.send(`Welcome to the party ${req.session.user.username}.`);
+    res.redirect('/recipes');
   } else {
-    res.send('Sorry, no guests allowed.');
+// ✅ This matches your controller route
+res.redirect('/auth/login');
   }
 });
 
 app.use('/auth', authController);
 
-// Server
+// 🔐 Protected Routes (require login)
+app.use(isSignedIn);
+app.use('/recipes', recipesController);
+
+// Start the server
 app.listen(port, () => {
   console.log(`🚀 App running on http://localhost:${port}`);
 });

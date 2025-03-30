@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head><title>My Recipes</title></head>
+<body>
+  <%- include('../partials/navbar.ejs') %>
+  <h1>My Recipes</h1>
+
+  <% if (recipes.length === 0) { %>
+    <p>You haven't created any recipes yet.</p>
+  <% } else { %>
+    <ul>
+      <% recipes.forEach(recipe => { %>
+        <li>
+          <strong><%= recipe.name %></strong>
+          <% if (recipe.ingredients.length > 0) { %>
+            <ul>
+              <% recipe.ingredients.forEach(ingredient => { %>
+                <li><%= ingredient.name %></li>
+              <% }) %>
+            </ul>
+          <% } else { %>
+            <em>No ingredients listed</em>
+          <% } %>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</body>
+</html>

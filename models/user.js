@@ -1,16 +1,15 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-const userSchema = mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-  },
-  password: {
-    type: String,
-    required: true,
+const recipeSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  ingredients: [String],
+  instructions: String,
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User', // this connects the recipe to the logged-in user
   },
 });
 
-const User = mongoose.model('User', userSchema);
+const Recipe = mongoose.model('Recipe', recipeSchema);
 
-module.exports = User;
+export default Recipe;
